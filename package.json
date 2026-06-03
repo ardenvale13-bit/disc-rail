@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "letta server --channels discord --install-channel-runtimes"
+    "start": "node start.mjs"
   },
   "dependencies": {
     "@letta-ai/letta-code": "0.27.0"
