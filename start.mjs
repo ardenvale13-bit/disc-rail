@@ -28,11 +28,11 @@ const tomDmConversationId = process.env.TOM_DISCORD_CONVERSATION_ID || "conv-d67
 const now = () => new Date().toISOString();
 
 const discordAllowedChannels = {
-  // the bar — tech/help
+  // the bar - tech/help
   "1421557526821998734": "mention-only",
   // table talk
   "1421576309582336090": "mention-only",
-  // sip with frogs — intentionally open
+  // sip with frogs - intentionally open
   "1421970395669729351": "open",
   // memory lane
   "1421969229430784121": "mention-only",
@@ -42,7 +42,7 @@ const discordAllowedChannels = {
   "1421967585091653784": "mention-only",
   // petting zoo
   "1477335744073961563": "mention-only",
-  // Arden DM — harmless here; DMs are controlled by allowedUsers/dmPolicy
+  // Arden DM - harmless here; DMs are controlled by allowedUsers/dmPolicy
   "1450371550632083456": "mention-only"
 };
 
@@ -190,6 +190,30 @@ if (telegramToken) {
   console.warn("[lincoln] TELEGRAM_BOT_TOKEN not set and no Telegram accounts.json exists; Telegram will not start until configured.");
 }
 
+function patchWindowsCwdGuard() {
+  const lettaJs = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
+  if (!existsSync(lettaJs)) {
+    console.warn(`[lincoln] Cannot patch Windows cwd guard; ${lettaJs} not found.`);
+    return;
+  }
+
+  let text = readFileSync(lettaJs, "utf8");
+  if (text.includes("Railway/Linux ignoring Windows cwd")) {
+    console.log("[lincoln] Windows cwd guard patch already present.");
+    return;
+  }
+
+  const needle = `    const requestedPath = msg.cwd?.trim();\n    if (!requestedPath) {\n      throw new Error("Working directory cannot be empty");\n    }`;
+  const replacement = `    const requestedPath = msg.cwd?.trim();\n    if (!requestedPath) {\n      throw new Error("Working directory cannot be empty");\n    }\n    if (process.platform !== "win32" && /^[A-Za-z]:[\\\\/]/.test(requestedPath)) {\n      console.warn("[lincoln] Railway/Linux ignoring Windows cwd", requestedPath);\n      emitDeviceStatusUpdate(socket, runtime, {\n        agent_id: agentId,\n        conversation_id: conversationId\n      });\n      return;\n    }`;
+
+  if (!text.includes(needle)) {
+    console.warn("[lincoln] Windows cwd guard target not found; source may have changed.");
+    return;
+  }
+
+  writeFileSync(lettaJs, text.replace(needle, replacement));
+  console.log("[lincoln] Patched Windows cwd guard for Railway/Linux.");
+}
 function patchDiscordBotAllowlist() {
   const lettaJs = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
   if (!existsSync(lettaJs)) {
@@ -221,6 +245,7 @@ function patchDiscordBotAllowlist() {
 }
 
 patchDiscordBotAllowlist();
+patchWindowsCwdGuard();
 
 const defaultBotAllowlist = [
   "1482200440765550603", // Glubby
@@ -244,10 +269,8 @@ const channels = telegramToken || existsSync(join(telegramDir, "accounts.json"))
 
 console.log(`[lincoln] Config written. Starting letta server for channels: ${channels}`);
 
-const args = ["letta", "server", "--channels", channels, "--install-channel-runtimes"];
-if (process.env.LETTA_DEBUG === "1" || process.env.LETTA_DEBUG === "true") {
-  args.push("--debug");
-}
+// Railway has no interactive TTY. Always use --debug/plain-text mode so Ink does not try raw mode.
+const args = ["letta", "server", "--channels", channels, "--install-channel-runtimes", "--debug"];
 
 const proc = spawn("npx", args, { stdio: "inherit", env: childEnv });
 proc.on("exit", (code) => process.exit(code ?? 0));
