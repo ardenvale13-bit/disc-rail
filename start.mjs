@@ -244,7 +244,40 @@ function patchDiscordBotAllowlist() {
   console.log("[lincoln] Patched Discord bot-message allowlist guard.");
 }
 
+function patchDiscordRespectAutoThread() {
+  // BUG (letta-code 0.27.x): the Discord runtime ALWAYS creates a thread on a
+  // guild @mention. It never consults the `autoThreadOnMention` config flag.
+  // Every new thread gets a threadId that none of our routes (threadId: null)
+  // match, so Letta spawns a fresh conversation instead of routing into the
+  // bound one. This patch gates thread creation on the config flag, so with
+  // autoThreadOnMention=false the bot replies in-channel (threadId null) and
+  // the message routes into the bound conversation as intended.
+  const lettaJs = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
+  if (!existsSync(lettaJs)) {
+    console.warn("[lincoln] Cannot patch Discord auto-thread; letta.js not found.");
+    return;
+  }
+
+  let text = readFileSync(lettaJs, "utf8");
+  if (text.includes("wasMentioned && config3.autoThreadOnMention === true")) {
+    console.log("[lincoln] Discord auto-thread patch already present.");
+    return;
+  }
+
+  const needle = "if (!isThread && wasMentioned) {\n          const createdThread = await createThreadForMention(message, content);";
+  const replacement = "if (!isThread && wasMentioned && config3.autoThreadOnMention === true) {\n          const createdThread = await createThreadForMention(message, content);";
+
+  if (!text.includes(needle)) {
+    console.warn("[lincoln] Discord auto-thread target not found; source may have changed.");
+    return;
+  }
+
+  writeFileSync(lettaJs, text.replace(needle, replacement));
+  console.log("[lincoln] Patched Discord runtime to respect autoThreadOnMention (no threads on mention).");
+}
+
 patchDiscordBotAllowlist();
+patchDiscordRespectAutoThread();
 patchWindowsCwdGuard();
 
 const defaultBotAllowlist = [
