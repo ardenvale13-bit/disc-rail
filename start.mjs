@@ -24,6 +24,7 @@ const discordAccountId = process.env.DISCORD_ACCOUNT_ID || "f208d146-6eca-4c59-8
 const vlConversationId = process.env.VL_CONVERSATION_ID || "conv-38b84fd4-3947-40f2-92eb-600fa1ac2fe6";
 const ardenDmConversationId = process.env.ARDEN_DISCORD_CONVERSATION_ID || "conv-e8b1fa60-1f02-4977-ae1b-69e3fd8da818";
 const tomDmConversationId = process.env.TOM_DISCORD_CONVERSATION_ID || "conv-d679305a-0853-4f35-b774-c823f275ca63";
+const extraChannelConversationId = process.env.EXTRA_DISCORD_CONVERSATION_ID || "conv-3e8b0a6f-c1b1-41e1-83ef-9ba49268292b";
 
 const now = () => new Date().toISOString();
 
@@ -42,6 +43,8 @@ const discordAllowedChannels = {
   "1421967585091653784": "mention-only",
   // petting zoo
   "1477335744073961563": "mention-only",
+  // new channel - intentionally open
+  "1504609884274950346": "open",
   // Arden DM - harmless here; DMs are controlled by allowedUsers/dmPolicy
   "1450371550632083456": "mention-only"
 };
@@ -99,6 +102,18 @@ const discordRoutes = {
       conversationId: tomDmConversationId,
       enabled: true,
       createdAt: "2026-06-04T08:44:03.245Z",
+      updatedAt: now()
+    },
+    // new channel -> dedicated conversation
+    {
+      accountId: discordAccountId,
+      chatId: "1504609884274950346",
+      chatType: "channel",
+      threadId: null,
+      agentId,
+      conversationId: extraChannelConversationId,
+      enabled: true,
+      createdAt: now(),
       updatedAt: now()
     },
     ...[
