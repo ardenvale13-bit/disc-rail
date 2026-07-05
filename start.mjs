@@ -291,8 +291,70 @@ function patchDiscordRespectAutoThread() {
   console.log("[lincoln] Patched Discord runtime to respect autoThreadOnMention (no threads on mention).");
 }
 
+
+function patchDiscordTypingInsteadOfLifecycleReactions() {
+  // letta-code 0.27.x parses acknowledge_message_reaction but the Discord
+  // lifecycle handler still sends 👀/✅/❌ reactions unless we make it respect
+  // the parsed config. While that config is false, use Discord typing instead.
+  const lettaJs = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
+  if (!existsSync(lettaJs)) {
+    console.warn("[lincoln] Cannot patch Discord lifecycle reactions/typing; letta.js not found.");
+    return;
+  }
+
+  let text = readFileSync(lettaJs, "utf8");
+  if (text.includes("[lincoln] Discord typing lifecycle patch")) {
+    console.log("[lincoln] Discord typing lifecycle patch already present.");
+    return;
+  }
+
+  const stateNeedle = `  const lifecycleErrorReplyKeys = new Map;\n`;
+  const stateReplacement = `  const lifecycleErrorReplyKeys = new Map;\n  const typingIntervalsBySourceKey = new Map; // [lincoln] Discord typing lifecycle patch\n`;
+  if (!text.includes(stateNeedle)) {
+    console.warn("[lincoln] Discord typing state target not found; source may have changed.");
+    return;
+  }
+  text = text.replace(stateNeedle, stateReplacement);
+
+  const helperNeedle = `  function getLifecycleReplyKey(source2) {\n    if (source2.channel !== "discord" || !isNonEmptyString4(source2.chatId)) {\n      return null;\n    }\n    return [\n      source2.chatId,\n      source2.threadId ?? source2.messageId ?? "",\n      source2.conversationId\n    ].join(":");\n  }\n`;
+  const helperReplacement = `${helperNeedle}  function getTypingSourceKey(source2) {\n    if (source2.channel !== "discord" || !isNonEmptyString4(source2.chatId)) {\n      return null;\n    }\n    return [\n      source2.threadId ?? source2.chatId,\n      source2.conversationId ?? "",\n      source2.messageId ?? ""\n    ].join(":");\n  }\n  async function sendTypingForSource(source2) {\n    if (!client)\n      return;\n    const targetChannelId = source2.threadId ?? source2.chatId;\n    if (!isNonEmptyString4(targetChannelId))\n      return;\n    try {\n      const channel = await client.channels.fetch(targetChannelId);\n      if (!channel || typeof channel.sendTyping !== "function")\n        return;\n      await channel.sendTyping();\n    } catch (error54) {\n      console.warn("[Discord] Failed to send typing indicator:", error54 instanceof Error ? error54.message : error54);\n    }\n  }\n  function startTypingForSource(source2) {\n    const key = getTypingSourceKey(source2);\n    if (!key || typingIntervalsBySourceKey.has(key))\n      return;\n    sendTypingForSource(source2);\n    const interval = setInterval(() => {\n      sendTypingForSource(source2);\n    }, 8000);\n    if (typeof interval.unref === "function")\n      interval.unref();\n    typingIntervalsBySourceKey.set(key, interval);\n  }\n  function stopTypingForSource(source2) {\n    const key = getTypingSourceKey(source2);\n    if (!key)\n      return;\n    const interval = typingIntervalsBySourceKey.get(key);\n    if (interval)\n      clearInterval(interval);\n    typingIntervalsBySourceKey.delete(key);\n  }\n  function clearAllTypingIndicators() {\n    for (const interval of typingIntervalsBySourceKey.values()) {\n      clearInterval(interval);\n    }\n    typingIntervalsBySourceKey.clear();\n  }\n`;
+  if (!text.includes(helperNeedle)) {
+    console.warn("[lincoln] Discord typing helper target not found; source may have changed.");
+    return;
+  }
+  text = text.replace(helperNeedle, helperReplacement);
+
+  const reactionNeedle = `  function scheduleLifecycleTransition(source2, nextState) {\n    const key = getLifecycleMessageKey(source2);\n    if (!key)\n      return null;\n`;
+  const reactionReplacement = `  function scheduleLifecycleTransition(source2, nextState) {\n    const key = getLifecycleMessageKey(source2);\n    if (!key)\n      return null;\n    if (config3.acknowledgeMessageReaction === false)\n      return null;\n`;
+  if (!text.includes(reactionNeedle)) {
+    console.warn("[lincoln] Discord lifecycle reaction target not found; source may have changed.");
+    return;
+  }
+  text = text.replace(reactionNeedle, reactionReplacement);
+
+  const lifecycleNeedle = `    async handleTurnLifecycleEvent(event2) {\n      if (!running)\n        return;\n      if (event2.type === "queued") {\n        await scheduleLifecycleTransition(event2.source, "queued");\n        return;\n      }\n      if (event2.type === "processing")\n        return;\n      const nextState = event2.outcome === "completed" ? "completed" : event2.outcome === "cancelled" ? "cancelled" : "error";\n      await Promise.all(event2.sources.map((source2) => scheduleLifecycleTransition(source2, nextState)));\n`;
+  const lifecycleReplacement = `    async handleTurnLifecycleEvent(event2) {\n      if (!running)\n        return;\n      if (event2.type === "queued") {\n        startTypingForSource(event2.source);\n        await scheduleLifecycleTransition(event2.source, "queued");\n        return;\n      }\n      if (event2.type === "processing") {\n        startTypingForSource(event2.source);\n        return;\n      }\n      const nextState = event2.outcome === "completed" ? "completed" : event2.outcome === "cancelled" ? "cancelled" : "error";\n      await Promise.all(event2.sources.map((source2) => {\n        stopTypingForSource(source2);\n        return scheduleLifecycleTransition(source2, nextState);\n      }));\n`;
+  if (!text.includes(lifecycleNeedle)) {
+    console.warn("[lincoln] Discord lifecycle typing target not found; source may have changed.");
+    return;
+  }
+  text = text.replace(lifecycleNeedle, lifecycleReplacement);
+
+  const stopNeedle = `      lifecycleErrorReplyKeys.clear();\n      console.log("[Discord] Bot stopped");\n`;
+  const stopReplacement = `      lifecycleErrorReplyKeys.clear();\n      clearAllTypingIndicators();\n      console.log("[Discord] Bot stopped");\n`;
+  if (!text.includes(stopNeedle)) {
+    console.warn("[lincoln] Discord stop cleanup target not found; source may have changed.");
+    return;
+  }
+  text = text.replace(stopNeedle, stopReplacement);
+
+  writeFileSync(lettaJs, text);
+  console.log("[lincoln] Patched Discord lifecycle reactions off + typing indicators on.");
+}
+
 patchDiscordBotAllowlist();
 patchDiscordRespectAutoThread();
+patchDiscordTypingInsteadOfLifecycleReactions();
 patchWindowsCwdGuard();
 
 const defaultBotAllowlist = [
