@@ -34,7 +34,7 @@ const discordAllowedChannels = {
   // table talk
   "1421576309582336090": "mention-only",
   // sip with frogs - intentionally open
-  "1421970395669729351": "mention-only",
+  "1421970395669729351": "open",
   // memory lane
   "1421969229430784121": "mention-only",
   // critter album
@@ -44,7 +44,7 @@ const discordAllowedChannels = {
   // petting zoo
   "1477335744073961563": "mention-only",
   // new channel - intentionally open
-  "1504609884274950346": "mention-only",
+  "1504609884274950346": "open",
   // Arden DM - harmless here; DMs are controlled by allowedUsers/dmPolicy
   "1450371550632083456": "mention-only"
 };
@@ -303,34 +303,13 @@ function patchDiscordTypingInsteadOfLifecycleReactions() {
   }
 
   let text = readFileSync(lettaJs, "utf8");
-  const typingPatchV1Marker = "// [lincoln] Discord typing lifecycle patch";
-  const typingPatchV2Marker = "// [lincoln] Discord typing lifecycle patch v2";
-  if (text.includes(typingPatchV2Marker)) {
-    console.log("[lincoln] Discord typing lifecycle patch v2 already present.");
-    return;
-  }
-
-  const lifecycleV1 = `    async handleTurnLifecycleEvent(event2) {\n      if (!running)\n        return;\n      if (event2.type === "queued") {\n        startTypingForSource(event2.source);\n        await scheduleLifecycleTransition(event2.source, "queued");\n        return;\n      }\n      if (event2.type === "processing") {\n        startTypingForSource(event2.source);\n        return;\n      }\n      const nextState = event2.outcome === "completed" ? "completed" : event2.outcome === "cancelled" ? "cancelled" : "error";\n      await Promise.all(event2.sources.map((source2) => {\n        stopTypingForSource(source2);\n        return scheduleLifecycleTransition(source2, nextState);\n      }));\n`;
-  const lifecycleV2 = `    async handleTurnLifecycleEvent(event2) {\n      if (!running)\n        return;\n      if (event2.type === "queued") {\n        await scheduleLifecycleTransition(event2.source, "queued");\n        return;\n      }\n      if (event2.type === "processing") {\n        for (const source2 of event2.sources) {\n          startTypingForSource(source2);\n        }\n        return;\n      }\n      const nextState = event2.outcome === "completed" ? "completed" : event2.outcome === "cancelled" ? "cancelled" : "error";\n      await Promise.all(event2.sources.map((source2) => {\n        stopTypingForSource(source2);\n        return scheduleLifecycleTransition(source2, nextState);\n      }));\n`;
-
-  // Upgrade an already-patched runtime in place. Railway may reuse node_modules
-  // between process restarts, so merely changing the fresh-install patch is not
-  // enough to remove timers created by the original queued-event implementation.
-  if (text.includes(typingPatchV1Marker)) {
-    if (!text.includes(lifecycleV1)) {
-      console.warn("[lincoln] Discord typing v1 upgrade target not found; source may have changed.");
-      return;
-    }
-    text = text
-      .replace(typingPatchV1Marker, typingPatchV2Marker)
-      .replace(lifecycleV1, lifecycleV2);
-    writeFileSync(lettaJs, text);
-    console.log("[lincoln] Upgraded Discord typing lifecycle patch to v2.");
+  if (text.includes("[lincoln] Discord typing lifecycle patch")) {
+    console.log("[lincoln] Discord typing lifecycle patch already present.");
     return;
   }
 
   const stateNeedle = `  const lifecycleErrorReplyKeys = new Map;\n`;
-  const stateReplacement = `  const lifecycleErrorReplyKeys = new Map;\n  const typingIntervalsBySourceKey = new Map; ${typingPatchV2Marker}\n`;
+  const stateReplacement = `  const lifecycleErrorReplyKeys = new Map;\n  const typingIntervalsBySourceKey = new Map; // [lincoln] Discord typing lifecycle patch\n`;
   if (!text.includes(stateNeedle)) {
     console.warn("[lincoln] Discord typing state target not found; source may have changed.");
     return;
@@ -354,7 +333,7 @@ function patchDiscordTypingInsteadOfLifecycleReactions() {
   text = text.replace(reactionNeedle, reactionReplacement);
 
   const lifecycleNeedle = `    async handleTurnLifecycleEvent(event2) {\n      if (!running)\n        return;\n      if (event2.type === "queued") {\n        await scheduleLifecycleTransition(event2.source, "queued");\n        return;\n      }\n      if (event2.type === "processing")\n        return;\n      const nextState = event2.outcome === "completed" ? "completed" : event2.outcome === "cancelled" ? "cancelled" : "error";\n      await Promise.all(event2.sources.map((source2) => scheduleLifecycleTransition(source2, nextState)));\n`;
-  const lifecycleReplacement = lifecycleV2;
+  const lifecycleReplacement = `    async handleTurnLifecycleEvent(event2) {\n      if (!running)\n        return;\n      if (event2.type === "queued") {\n        startTypingForSource(event2.source);\n        await scheduleLifecycleTransition(event2.source, "queued");\n        return;\n      }\n      if (event2.type === "processing") {\n        startTypingForSource(event2.source);\n        return;\n      }\n      const nextState = event2.outcome === "completed" ? "completed" : event2.outcome === "cancelled" ? "cancelled" : "error";\n      await Promise.all(event2.sources.map((source2) => {\n        stopTypingForSource(source2);\n        return scheduleLifecycleTransition(source2, nextState);\n      }));\n`;
   if (!text.includes(lifecycleNeedle)) {
     console.warn("[lincoln] Discord lifecycle typing target not found; source may have changed.");
     return;
