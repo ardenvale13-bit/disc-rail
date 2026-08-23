@@ -14,6 +14,32 @@ Set these in your Railway service settings:
 
 Mount a volume at `/root/.letta` so channel config persists across redeploys.
 
+The service also rebuilds its channel configuration from environment variables
+and keeps canonical agent memory in Letta's remote git repository. A volume is
+still recommended for local extension state, channel runtime caches, and easier
+restarts.
+
+## MemFS Runtime Requirements
+
+Letta's git-backed memory requires the `git` executable at runtime. Railway's
+default Node image does not include it, so `nixpacks.toml` explicitly installs
+both `git` and `curl`.
+
+`start.mjs` fails fast if git is unavailable instead of silently starting with
+an inaccessible memory filesystem. It also copies trusted extensions from this
+repository's `extensions/` directory into `~/.letta/extensions/` before Letta
+starts, making the MemFS synchronization repair reproducible after redeploys.
+
+The bundled `memfs-sync-repair` extension:
+
+- compares git-backed memory files with attached Letta API blocks by hash;
+- synchronizes safe one-sided changes;
+- stores the last common signature in attached block metadata so conflict
+  detection survives an ephemeral Railway rebuild;
+- establishes a first baseline automatically only when both sides already
+  match;
+- reports rather than overwriting ambiguous two-sided conflicts.
+
 ## First Deploy Setup
 
 Once deployed, open Railway shell and run:

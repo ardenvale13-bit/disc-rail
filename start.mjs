@@ -2,6 +2,7 @@ import { spawn } from "child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
+import { prepareRuntime } from "./runtime-bootstrap.mjs";
 
 const home = homedir();
 const lettaDir = join(home, ".letta");
@@ -11,6 +12,13 @@ const telegramDir = join(channelsDir, "telegram");
 
 mkdirSync(discordDir, { recursive: true });
 mkdirSync(telegramDir, { recursive: true });
+
+try {
+  prepareRuntime({ projectDir: process.cwd(), lettaDir });
+} catch (error) {
+  console.error(`[lincoln] Runtime preparation failed: ${error instanceof Error ? error.message : error}`);
+  process.exit(1);
+}
 
 const agentId = process.env.LETTA_AGENT_ID || "agent-036c41a5-b0cd-4e04-92fc-8a6f55e3c0b1";
 
@@ -404,4 +412,8 @@ console.log(`[lincoln] Config written. Starting letta server for channels: ${cha
 const args = ["letta", "server", "--channels", channels, "--install-channel-runtimes", "--debug"];
 
 const proc = spawn("npx", args, { stdio: "inherit", env: childEnv });
+proc.on("error", (error) => {
+  console.error(`[lincoln] Failed to start Letta server: ${error instanceof Error ? error.message : error}`);
+  process.exit(1);
+});
 proc.on("exit", (code) => process.exit(code ?? 0));
