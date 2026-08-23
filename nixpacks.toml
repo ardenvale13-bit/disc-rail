@@ -1,2 +1,2 @@
 [phases.setup]
-nixPkgs = ["...", "git", "curl"]
+nixPkgs = ["...", "git", "curl", "python3", "gcc", "gnumake"]
