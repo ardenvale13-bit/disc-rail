@@ -1,2 +1,2 @@
 [phases.setup]
-aptPkgs = ["...", "git", "curl"]
+nixPkgs = ["...", "git", "curl"]

@@ -23,7 +23,7 @@ restarts.
 
 Letta's git-backed memory requires the `git` executable at runtime. Railway's
 default Node image does not include it, so `nixpacks.toml` explicitly installs
-both `git` and `curl`.
+both `git` and `curl` through Nixpacks' runtime packages.
 
 `start.mjs` fails fast if git is unavailable instead of silently starting with
 an inaccessible memory filesystem. It also copies trusted extensions from this
