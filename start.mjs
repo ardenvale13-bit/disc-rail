@@ -53,6 +53,7 @@ const discordAllowedChannels = {
   "1477335744073961563": "mention-only",
   // new channel - intentionally open
   "1504609884274950346": "mention-only",
+  "1486986160327753780": "open",
   // Arden DM - harmless here; DMs are controlled by allowedUsers/dmPolicy
   "1450371550632083456": "mention-only"
 };
@@ -120,6 +121,18 @@ const discordRoutes = {
       threadId: null,
       agentId,
       conversationId: extraChannelConversationId,
+      enabled: true,
+      createdAt: now(),
+      updatedAt: now()
+    },
+    // Dedicated Letta chat for channel 1486986160327753780
+    {
+      accountId: discordAccountId,
+      chatId: "1486986160327753780",
+      chatType: "channel",
+      threadId: null,
+      agentId,
+      conversationId: "conv-46df116c-bdb7-406c-9038-25b4adf5bb4f",
       enabled: true,
       createdAt: now(),
       updatedAt: now()
