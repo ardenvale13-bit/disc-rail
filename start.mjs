@@ -132,7 +132,7 @@ const discordRoutes = {
       chatType: "channel",
       threadId: null,
       agentId,
-      conversationId: "conv-46df116c-bdb7-406c-9038-25b4adf5bb4f",
+      conversationId: "conv-9c51a470-a7d0-4203-95c3-8c57dd20ca78",
       enabled: true,
       createdAt: now(),
       updatedAt: now()
