@@ -1,6 +1,32 @@
 # Lincoln Discord Listener — Railway Deployment
 
-One process. One bot token. No haunted duplicates.
+One process, with separate Discord accounts for Lincoln and ZIbberflint.
+
+## ZIbberflint
+
+Set `ZIBB_DISCORD_BOT_TOKEN` in this existing Railway service's Variables tab
+to enable ZIbberflint. Keep Lincoln's `DISCORD_BOT_TOKEN` unchanged.
+The Letta API key must have access to both agents.
+
+Invite the new bot to the server and grant View Channel, Send Messages,
+Read Message History, and Send Messages in Threads where needed. Enable
+Message Content Intent in the Discord Developer Portal for plain-word triggers.
+
+ZIbberflint uses agent `agent-59a098ee-3d30-4e9f-b811-fc3ddd98b7aa` and
+conversation `conv-50e495b0-61bc-4ead-b2af-5b34047ac031` in the three shared channels.
+Channel `1484472784741728387` uses `conv-1c5ce938-d755-44f5-9d39-81b1d106f3c4`.
+Arden's DMs use `conv-3da5d408-013b-48e6-b2ac-1b022e8f4170`.
+Only Arden (Discord user `730173882153173163`) is allowed to DM this bot.
+The bot's own DM channel is discovered on the first message.
+
+In the configured channels, triggers are @mentions, replies to this bot
+(even with the reply ping disabled), or the whole word `Zibb`, case-insensitive.
+Unaddressed thread messages are ignored too. Existing bot-author filtering
+still applies. The runtime patch is checked against pinned Letta 0.27.0 and
+fails startup if its expected source targets change.
+
+After deploying, verify each trigger and a DM in Discord. Local tests do not
+verify the token, Discord permissions, or Letta access.
 
 ## Railway Environment Variables
 
