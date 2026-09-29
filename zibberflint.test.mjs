@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { addZibberflint, patchZibberflint, zibbConversationId, zibbPrivateChannelConversationId, zibbDmConversationId } from "./zibberflint.mjs";
+import { addZibberflint, patchZibberflint, patchZibberflintBotAccess, zibbConversationId, zibbPrivateChannelConversationId, zibbDmConversationId } from "./zibberflint.mjs";
 
 test("optional account, separate routes, and restricted DMs", () => {
   const accounts = { accounts: [{ accountId: "lincoln" }] }, routes = { routes: [] };
@@ -13,6 +13,37 @@ test("optional account, separate routes, and restricted DMs", () => {
   assert.equal(routes.routes.length, 4);
   assert.equal(routes.routes.find(route => route.chatId === "1484472784741728387").conversationId, zibbPrivateChannelConversationId);
   assert.ok(routes.routes.filter(route => route.chatId !== "1484472784741728387").every(route => route.conversationId === zibbConversationId));
+});
+
+test("single bot requires Zibb's name; Lincoln and humans retain their policies", async () => {
+  const source = readFileSync(process.env.LETTA_TEST_BUNDLE, "utf8");
+  const start = readFileSync(new URL("./start.mjs", import.meta.url), "utf8");
+  const allowlistFunction = start.slice(start.indexOf("function patchDiscordBotAllowlist()"), start.indexOf("function patchDiscordRespectAutoThread()"));
+  const literal = allowlistFunction.match(/const replacement = (`[^`]+`);/)[1];
+  const guard = new Function("return " + literal)();
+  const base = patchZibberflint(source.replace('        if (message.author.bot)\n          return;', guard));
+  const patched = patchZibberflintBotAccess(base);
+  assert.equal(patchZibberflintBotAccess(patched), patched);
+  assert.throws(() => patchZibberflintBotAccess(source));
+  const first = patched.indexOf('        if (message.author.id === client?.user?.id)');
+  const body = patched.slice(first, patched.indexOf('        if (chatType === "direct")', first));
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const run = new AsyncFunction("message", "config3", "client", "process", "console", "resolveDiscordChatType", "isThreadMessage", "hasBotMention", "isDiscordGuildChannelAllowed", body + "\nreturn wasMentioned;");
+  const check = (content, { id = "1438668481716289700", bot = true, accountId = "zibberflint", allowed = true, mention = false, guildId = "guild", reply = false } = {}) => run(
+    { content, author: { id, bot }, guildId, channel: {}, channelId: "channel", reference: reply ? { messageId: "msg" } : undefined, fetchReference: async () => ({ author: { id: "self" } }) },
+    { accountId }, { user: { id: "self" } }, { env: { LETTA_DISCORD_REPLY_TO_BOT_IDS: "old-bot" } }, { log() {}, warn() {} }, guild => guild ? "channel" : "direct", () => false, () => mention, () => allowed);
+  assert.equal(await check("hello ZIBB!"), true);
+  assert.equal(await check("Zibberflint, hello"), true);
+  assert.equal(await check("zibble"), undefined);
+  assert.equal(await check("hello", { mention: true, reply: true }), undefined);
+  assert.equal(await check("Zibb", { id: "old-bot" }), undefined);
+  assert.equal(await check("Zibb", { id: "self" }), undefined);
+  assert.equal(await check("Zibb", { allowed: false }), undefined);
+  assert.equal(await check("Zibb", { guildId: null }), undefined);
+  assert.equal(await check("Zibb", { accountId: "lincoln", mention: true }), undefined);
+  assert.equal(await check("hello", { accountId: "lincoln", id: "old-bot", mention: true }), true);
+  assert.equal(await check("hello", { bot: false, mention: true }), true);
+  assert.equal(await check("hello", { bot: false, reply: true }), true);
 });
 
 test("pinned runtime patch and actual trigger behavior", async () => {

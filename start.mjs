@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { prepareRuntime } from "./runtime-bootstrap.mjs";
-import { addZibberflint, patchZibberflint } from "./zibberflint.mjs";
+import { addZibberflint, patchZibberflint, patchZibberflintBotAccess } from "./zibberflint.mjs";
 
 const home = homedir();
 const lettaDir = join(home, ".letta");
@@ -402,7 +402,7 @@ patchDiscordTypingInsteadOfLifecycleReactions();
 patchWindowsCwdGuard();
 if (process.env.ZIBB_DISCORD_BOT_TOKEN) {
   const runtimePath = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
-  writeFileSync(runtimePath, patchZibberflint(readFileSync(runtimePath, "utf8")));
+  writeFileSync(runtimePath, patchZibberflintBotAccess(patchZibberflint(readFileSync(runtimePath, "utf8"))));
   console.log("[ZIbberflint] Configured mentions, replies, and whole-word Zibb triggers.");
 }
 

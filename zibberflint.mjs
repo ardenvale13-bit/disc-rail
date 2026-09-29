@@ -28,6 +28,21 @@ export function addZibberflint(accounts, routes, token) {
 }
 
 // Applied to the pinned Letta 0.27.0 bundle, alongside the existing runtime fixes.
+export function patchZibberflintBotAccess(source) {
+  const marker = "/* Zibberflint single-bot access v1 */";
+  if (source.includes(marker)) return source;
+  const needle = 'if (message.author.bot && !(process.env.LETTA_DISCORD_REPLY_TO_BOT_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean).includes(message.author.id)) {';
+  const replacement = `if (message.author.bot && (${marker} config3.accountId === "${zibbAccountId}"
+          ? !(message.author.id === "1438668481716289700" && message.guildId && /\\bzibb(?:erflint)?\\b/i.test(message.content ?? ""))
+          : !(process.env.LETTA_DISCORD_REPLY_TO_BOT_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean).includes(message.author.id))) {`;
+  if (source.split(needle).length !== 2) throw new Error("ZIbberflint bot-access patch target missing or ambiguous.");
+  // Treat the full name as a trigger too, without changing human trigger behavior.
+  const mention = 'let wasMentioned = chatType === "channel" && hasBotMention(message);';
+  if (source.split(mention).length !== 2) throw new Error("ZIbberflint mention patch target missing or ambiguous.");
+  return source.replace(needle, replacement).replace(mention,
+    mention + '\n        if (config3.accountId === "zibberflint" && message.author.bot && chatType === "channel" && /\\bzibb(?:erflint)?\\b/i.test(content)) wasMentioned = true;');
+}
+
 export function patchZibberflint(source) {
   const marker = "// Zibberflint triggers v2";
   if (source.includes(marker)) return source;
