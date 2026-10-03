@@ -29,11 +29,18 @@ export function addZibberflint(accounts, routes, token) {
 
 // Applied to the pinned Letta 0.27.0 bundle, alongside the existing runtime fixes.
 export function patchZibberflintBotAccess(source) {
-  const marker = "/* Zibberflint single-bot access v1 */";
+  const marker = "/* Zibberflint all-bot access v2 */";
   if (source.includes(marker)) return source;
+  const oldRule = `/* Zibberflint single-bot access v1 */ config3.accountId === "${zibbAccountId}"
+          ? !(message.author.id === "1438668481716289700" && message.guildId && /\\bzibb(?:erflint)?\\b/i.test(message.content ?? ""))`;
+  if (source.includes("/* Zibberflint single-bot access v1 */")) {
+    if (source.split(oldRule).length !== 2) throw new Error("ZIbberflint bot-access upgrade target missing or ambiguous.");
+    return source.replace(oldRule, `${marker} config3.accountId === "${zibbAccountId}"
+          ? !message.guildId`);
+  }
   const needle = 'if (message.author.bot && !(process.env.LETTA_DISCORD_REPLY_TO_BOT_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean).includes(message.author.id)) {';
   const replacement = `if (message.author.bot && (${marker} config3.accountId === "${zibbAccountId}"
-          ? !(message.author.id === "1438668481716289700" && message.guildId && /\\bzibb(?:erflint)?\\b/i.test(message.content ?? ""))
+          ? !message.guildId
           : !(process.env.LETTA_DISCORD_REPLY_TO_BOT_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean).includes(message.author.id))) {`;
   if (source.split(needle).length !== 2) throw new Error("ZIbberflint bot-access patch target missing or ambiguous.");
   // Treat the full name as a trigger too, without changing human trigger behavior.

@@ -15,7 +15,7 @@ test("optional account, separate routes, and restricted DMs", () => {
   assert.ok(routes.routes.filter(route => route.chatId !== "1484472784741728387").every(route => route.conversationId === zibbConversationId));
 });
 
-test("single bot requires Zibb's name; Lincoln and humans retain their policies", async () => {
+test("all bots can address Zibb; Lincoln and humans retain their policies", async () => {
   const source = readFileSync(process.env.LETTA_TEST_BUNDLE, "utf8");
   const start = readFileSync(new URL("./start.mjs", import.meta.url), "utf8");
   const allowlistFunction = start.slice(start.indexOf("function patchDiscordBotAllowlist()"), start.indexOf("function patchDiscordRespectAutoThread()"));
@@ -24,6 +24,9 @@ test("single bot requires Zibb's name; Lincoln and humans retain their policies"
   const base = patchZibberflint(source.replace('        if (message.author.bot)\n          return;', guard));
   const patched = patchZibberflintBotAccess(base);
   assert.equal(patchZibberflintBotAccess(patched), patched);
+  const oldPatch = patched.replace('/* Zibberflint all-bot access v2 */ config3.accountId === "zibberflint"\n          ? !message.guildId', '/* Zibberflint single-bot access v1 */ config3.accountId === "zibberflint"\n          ? !(message.author.id === "1438668481716289700" && message.guildId && /\\bzibb(?:erflint)?\\b/i.test(message.content ?? ""))');
+  assert.notEqual(oldPatch, patched);
+  assert.equal(patchZibberflintBotAccess(oldPatch), patched);
   assert.throws(() => patchZibberflintBotAccess(source));
   const first = patched.indexOf('        if (message.author.id === client?.user?.id)');
   const body = patched.slice(first, patched.indexOf('        if (chatType === "direct")', first));
@@ -35,8 +38,11 @@ test("single bot requires Zibb's name; Lincoln and humans retain their policies"
   assert.equal(await check("hello ZIBB!"), true);
   assert.equal(await check("Zibberflint, hello"), true);
   assert.equal(await check("zibble"), undefined);
-  assert.equal(await check("hello", { mention: true, reply: true }), undefined);
-  assert.equal(await check("Zibb", { id: "old-bot" }), undefined);
+  assert.equal(await check("hello", { id: "new-bot", mention: true }), true);
+  assert.equal(await check("hello", { id: "new-bot", reply: true }), true);
+  assert.equal(await check("hello", { id: "new-bot" }), undefined);
+  assert.equal(await check("Zibb", { id: "old-bot" }), true);
+  assert.equal(await check("Zibberflint!", { id: "new-bot" }), true);
   assert.equal(await check("Zibb", { id: "self" }), undefined);
   assert.equal(await check("Zibb", { allowed: false }), undefined);
   assert.equal(await check("Zibb", { guildId: null }), undefined);

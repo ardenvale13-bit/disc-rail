@@ -21,10 +21,11 @@ The bot's own DM channel is discovered on the first message.
 
 In the configured channels, triggers are @mentions, replies to this bot
 (even with the reply ping disabled), or the whole word `Zibb`, case-insensitive.
-Unaddressed thread messages are ignored too. ZIbberflint accepts messages from
-bot `1438668481716289700` only when they contain the whole word `Zibb` or
-`Zibberflint` (case-insensitive) in an allowed server channel. Other bots cannot
-trigger him; Lincoln retains his existing bot allowlist. The runtime patch is checked against pinned Letta 0.27.0 and
+Unaddressed thread messages are ignored too. Any bot can trigger ZIbberflint
+in an allowed server channel by @mentioning him, replying to his message
+(including without a ping), or using the whole word `Zibb` or `Zibberflint`
+(case-insensitive). His own messages are ignored, and bot DMs remain blocked.
+Lincoln retains his existing bot allowlist. The runtime patch is checked against pinned Letta 0.27.0 and
 fails startup if its expected source targets change.
 
 After deploying, verify each trigger and a DM in Discord. Local tests do not
