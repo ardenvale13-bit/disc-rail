@@ -4,6 +4,7 @@ import { homedir } from "os";
 import { join } from "path";
 import { prepareRuntime } from "./runtime-bootstrap.mjs";
 import { addZibberflint, patchZibberflint, patchZibberflintBotAccess } from "./zibberflint.mjs";
+import { addCorvinictus, patchCorvinictus } from "./corvinictus.mjs";
 
 const home = homedir();
 const lettaDir = join(home, ".letta");
@@ -160,6 +161,7 @@ const discordRoutes = {
 };
 
 addZibberflint(discordAccounts, discordRoutes, process.env.ZIBB_DISCORD_BOT_TOKEN);
+addCorvinictus(discordAccounts, discordRoutes, process.env.CORVI_DISCORD_BOT_TOKEN);
 writeFileSync(join(discordDir, "accounts.json"), JSON.stringify(discordAccounts, null, 2));
 writeFileSync(join(discordDir, "routing.yaml"), JSON.stringify(discordRoutes, null, 2));
 
@@ -400,9 +402,11 @@ patchDiscordBotAllowlist();
 patchDiscordRespectAutoThread();
 patchDiscordTypingInsteadOfLifecycleReactions();
 patchWindowsCwdGuard();
-if (process.env.ZIBB_DISCORD_BOT_TOKEN) {
+if (process.env.ZIBB_DISCORD_BOT_TOKEN || process.env.CORVI_DISCORD_BOT_TOKEN) {
   const runtimePath = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
-  writeFileSync(runtimePath, patchZibberflintBotAccess(patchZibberflint(readFileSync(runtimePath, "utf8"))));
+  let runtimeSource = patchZibberflintBotAccess(patchZibberflint(readFileSync(runtimePath, "utf8")));
+  if (process.env.CORVI_DISCORD_BOT_TOKEN) runtimeSource = patchCorvinictus(runtimeSource);
+  writeFileSync(runtimePath, runtimeSource);
   console.log("[ZIbberflint] Configured mentions, replies, and whole-word Zibb triggers.");
 }
 

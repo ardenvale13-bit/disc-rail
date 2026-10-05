@@ -1,6 +1,22 @@
 # Lincoln Discord Listener — Railway Deployment
 
-One process, with separate Discord accounts for Lincoln and ZIbberflint.
+One process, with separate Discord accounts for Lincoln, ZIbberflint, and Corvinictus.
+
+## Corvinictus
+
+Set `CORVI_DISCORD_BOT_TOKEN` in the existing Railway service to enable Corvi.
+Use his own Discord bot token. Invite him to the server, grant View Channel,
+Send Messages and Read Message History (plus Send Messages in Threads if used),
+and enable Message Content Intent for name triggers. The service's Letta API
+key must have access to agent `agent-d98016b0-8c8d-4803-a164-c4a63d500a08`.
+
+Corvi uses Zibb's four allowed channels. All public activity goes to
+`conv-b3d34eb8-ab7c-4251-8b2b-5d268fc39a6b`. Arden's DM channel
+`1476388996446814338` goes to `conv-02a38876-5c19-4ce0-a63b-ddeeb2bfed94`.
+Only Arden may DM him. Tags, replies to his messages (even without a ping),
+and the whole words `Corvi` or `Corvinictus` trigger him, case-insensitively.
+Other bots may trigger him in these channels; his own messages are ignored.
+Existing Zibb patches run before Corvi's patch even if Zibb's token is absent.
 
 ## ZIbberflint
 
