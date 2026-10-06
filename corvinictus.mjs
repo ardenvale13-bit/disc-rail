@@ -1,7 +1,7 @@
 import { zibbChannels } from "./zibberflint.mjs";
 
 export const corviAgentId = "agent-d98016b0-8c8d-4803-a164-c4a63d500a08";
-export const corviDmConversationId = "conv-02a38876-5c19-4ce0-a63b-ddeeb2bfed94";
+export const corviDmConversationId = "conv-ed3ddce1-8cb8-4e7f-bf0b-d79f48fc7709";
 export const corviPublicConversationId = "conv-b3d34eb8-ab7c-4251-8b2b-5d268fc39a6b";
 
 export function addCorvinictus(accounts, routes, token) {
@@ -31,7 +31,7 @@ export function addCorvinictus(accounts, routes, token) {
 // Runs after the existing Zibb patches, including when only Corvi is enabled.
 export function patchCorvinictus(source) {
   const marker = "// Corvinictus triggers v1";
-  if (source.includes(marker)) return source;
+  if (source.includes(marker)) return source.replaceAll("conv-02a38876-5c19-4ce0-a63b-ddeeb2bfed94", corviDmConversationId);
   const mention = '        let wasMentioned = chatType === "channel" && hasBotMention(message);';
   const changes = [
     ['/* Zibberflint all-bot access v2 */ config3.accountId === "zibberflint"',

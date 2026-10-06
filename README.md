@@ -12,7 +12,7 @@ key must have access to agent `agent-d98016b0-8c8d-4803-a164-c4a63d500a08`.
 
 Corvi uses Zibb's four allowed channels. All public activity goes to
 `conv-b3d34eb8-ab7c-4251-8b2b-5d268fc39a6b`. Arden's DM channel
-`1476388996446814338` goes to `conv-02a38876-5c19-4ce0-a63b-ddeeb2bfed94`.
+`1476388996446814338` goes to `conv-ed3ddce1-8cb8-4e7f-bf0b-d79f48fc7709`.
 Only Arden may DM him. Tags, replies to his messages (even without a ping),
 and the whole words `Corvi` or `Corvinictus` trigger him, case-insensitively.
 Other bots may trigger him in these channels; his own messages are ignored.

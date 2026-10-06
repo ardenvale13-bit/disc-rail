@@ -23,6 +23,7 @@ test("combined runtime triggers, routing, and repeat startup", async () => {
   const guard = new Function("return " + allowlist.match(/const replacement = (`[^`]+`);/)[1])();
   const zibb = patchZibberflintBotAccess(patchZibberflint(source.replace('        if (message.author.bot)\n          return;', guard)));
   const patched = patchCorvinictus(zibb);
+  assert.equal(patchCorvinictus(patched.replaceAll(corviDmConversationId, "conv-02a38876-5c19-4ce0-a63b-ddeeb2bfed94")), patched);
   assert.equal(patchCorvinictus(patchZibberflintBotAccess(patchZibberflint(patched))), patched);
   assert.throws(() => patchCorvinictus(source));
   const first = patched.indexOf('        if (message.author.id === client?.user?.id)');
