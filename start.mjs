@@ -5,6 +5,7 @@ import { join } from "path";
 import { prepareRuntime } from "./runtime-bootstrap.mjs";
 import { addZibberflint, patchZibberflint, patchZibberflintBotAccess } from "./zibberflint.mjs";
 import { addCorvinictus, patchCorvinictus } from "./corvinictus.mjs";
+import { patchDiscordKeywords } from "./discord-keywords.mjs";
 
 const home = homedir();
 const lettaDir = join(home, ".letta");
@@ -402,12 +403,12 @@ patchDiscordBotAllowlist();
 patchDiscordRespectAutoThread();
 patchDiscordTypingInsteadOfLifecycleReactions();
 patchWindowsCwdGuard();
-if (process.env.ZIBB_DISCORD_BOT_TOKEN || process.env.CORVI_DISCORD_BOT_TOKEN) {
+{
   const runtimePath = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
   let runtimeSource = patchZibberflintBotAccess(patchZibberflint(readFileSync(runtimePath, "utf8")));
-  if (process.env.CORVI_DISCORD_BOT_TOKEN) runtimeSource = patchCorvinictus(runtimeSource);
+  runtimeSource = patchDiscordKeywords(patchCorvinictus(runtimeSource));
   writeFileSync(runtimePath, runtimeSource);
-  console.log("[ZIbberflint] Configured mentions, replies, and whole-word Zibb triggers.");
+  console.log("[Discord] Configured account-specific mentions, replies, and keyword triggers.");
 }
 
 const defaultBotAllowlist = [

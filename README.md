@@ -2,6 +2,19 @@
 
 One process, with separate Discord accounts for Lincoln, ZIbberflint, and Corvinictus.
 
+## Word triggers
+
+In each bot's allowed server channels, whole words match case-insensitively:
+
+- Zibb: `zibb`, `zibberflint`, `sock`, `socks`, `sporchlet`, `sporchlets`.
+- Corvi: `corvi`, `corvinictus`, `grudge`, `purple`, `glow`, `sporchlet`, `sporchlets`.
+- Lincoln: `lincoln` also triggers him in mention-only channels.
+
+`sporchlet` and `sporchlets` can summon both Zibb and Corvi. Existing tags,
+replies, channel permissions, DM routing, and bot-author policies still apply.
+The runtime patches are installed for all three accounts regardless of which
+optional tokens are present; only accounts with tokens are enabled.
+
 ## Corvinictus
 
 Set `CORVI_DISCORD_BOT_TOKEN` in the existing Railway service to enable Corvi.

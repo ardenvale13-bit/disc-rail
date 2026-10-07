@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { patchDiscordKeywords } from "./discord-keywords.mjs";
 import { addCorvinictus, patchCorvinictus, corviDmConversationId, corviPublicConversationId } from "./corvinictus.mjs";
 import { patchZibberflint, patchZibberflintBotAccess, zibbChannels, zibbDmConversationId } from "./zibberflint.mjs";
 
@@ -22,7 +23,8 @@ test("combined runtime triggers, routing, and repeat startup", async () => {
   const allowlist = start.slice(start.indexOf("function patchDiscordBotAllowlist()"), start.indexOf("function patchDiscordRespectAutoThread()"));
   const guard = new Function("return " + allowlist.match(/const replacement = (`[^`]+`);/)[1])();
   const zibb = patchZibberflintBotAccess(patchZibberflint(source.replace('        if (message.author.bot)\n          return;', guard)));
-  const patched = patchCorvinictus(zibb);
+  const patched = patchDiscordKeywords(patchCorvinictus(zibb));
+  assert.equal(patchDiscordKeywords(patched), patched);
   assert.equal(patchCorvinictus(patched.replaceAll(corviDmConversationId, "conv-02a38876-5c19-4ce0-a63b-ddeeb2bfed94")), patched);
   assert.equal(patchCorvinictus(patchZibberflintBotAccess(patchZibberflint(patched))), patched);
   assert.throws(() => patchCorvinictus(source));
@@ -48,6 +50,26 @@ test("combined runtime triggers, routing, and repeat startup", async () => {
   assert.equal(await check("Corvi", { accountId: "zibberflint" }), undefined);
   assert.equal(await check("hello", { accountId: "lincoln", mention: true }), undefined);
   assert.equal(await check("hello", { accountId: "lincoln", id: "old-bot", mention: true }), true);
+  for (const bot of [true, false]) {
+    for (const word of ["zibb", "zibberflint", "sock", "socks", "sporchlet", "sporchlets"]) {
+      assert.equal(await check(`hey ${word.toUpperCase()}!`, { accountId: "zibberflint", bot }), true);
+      assert.equal(await check(word, { accountId: "zibberflint", bot, allowed: false }), undefined);
+    }
+    for (const word of ["corvi", "corvinictus", "grudge", "purple", "glow", "sporchlet", "sporchlets"]) {
+      assert.equal(await check(`hey ${word.toUpperCase()}!`, { bot }), true);
+      assert.equal(await check(word, { bot, allowed: false }), undefined);
+    }
+  }
+  assert.equal(await check("sockets", { accountId: "zibberflint" }), undefined);
+  assert.equal(await check("glowing begrudged sporchletish"), undefined);
+  assert.equal(await check("sock"), undefined);
+  assert.equal(await check("purple", { accountId: "zibberflint" }), undefined);
+  const lincoln = "f208d146-6eca-4c59-8221-7bff2cd288a4";
+  assert.equal(await check("hello LINCOLN!", { accountId: lincoln, bot: false }), true);
+  assert.equal(await check("Lincolnshire", { accountId: lincoln, bot: false }), false);
+  assert.equal(await check("lincoln", { accountId: lincoln }), undefined);
+  assert.equal(await check("lincoln", { accountId: lincoln, id: "old-bot" }), true);
+  assert.equal(await check("lincoln", { accountId: lincoln, bot: false, guildId: null }), false);
   const routingStart = patched.indexOf('    const conversationId = config3.accountId === "corvinictus"');
   const routing = patched.slice(routingStart, patched.indexOf(';', routingStart) + 1);
   const resolve = new AsyncFunction("config3", "msg", routing + "\nreturn conversationId;");
