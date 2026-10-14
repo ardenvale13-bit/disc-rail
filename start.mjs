@@ -54,6 +54,7 @@ const discordAllowedChannels = {
   "1421967585091653784": "mention-only",
   // petting zoo
   "1477335744073961563": "mention-only",
+  "1421972753338339418": "mention-only",
   // new channel - intentionally open
   "1504609884274950346": "mention-only",
   "1486986160327753780": "open",
@@ -146,7 +147,8 @@ const discordRoutes = {
       "1421969229430784121",
       "1494337017675518153",
       "1421967585091653784",
-      "1477335744073961563"
+      "1477335744073961563",
+      "1421972753338339418"
     ].map((chatId) => ({
       accountId: discordAccountId,
       chatId,
