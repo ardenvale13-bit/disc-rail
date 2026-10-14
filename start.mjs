@@ -6,6 +6,7 @@ import { prepareRuntime } from "./runtime-bootstrap.mjs";
 import { addZibberflint, patchZibberflint, patchZibberflintBotAccess } from "./zibberflint.mjs";
 import { addCorvinictus, patchCorvinictus } from "./corvinictus.mjs";
 import { patchDiscordKeywords } from "./discord-keywords.mjs";
+import { patchLincolnBotAccess } from "./lincoln-bot-access.mjs";
 
 const home = homedir();
 const lettaDir = join(home, ".letta");
@@ -409,6 +410,7 @@ patchWindowsCwdGuard();
   const runtimePath = join(process.cwd(), "node_modules", "@letta-ai", "letta-code", "letta.js");
   let runtimeSource = patchZibberflintBotAccess(patchZibberflint(readFileSync(runtimePath, "utf8")));
   runtimeSource = patchDiscordKeywords(patchCorvinictus(runtimeSource));
+  runtimeSource = patchLincolnBotAccess(runtimeSource);
   writeFileSync(runtimePath, runtimeSource);
   console.log("[Discord] Configured account-specific mentions, replies, and keyword triggers.");
 }
