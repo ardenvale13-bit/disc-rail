@@ -35,7 +35,7 @@ if (!discordToken) {
 const discordAccountId = process.env.DISCORD_ACCOUNT_ID || "f208d146-6eca-4c59-8221-7bff2cd288a4";
 const vlConversationId = process.env.VL_CONVERSATION_ID || "conv-38b84fd4-3947-40f2-92eb-600fa1ac2fe6";
 const ardenDmConversationId = process.env.ARDEN_DISCORD_CONVERSATION_ID || "conv-e8b1fa60-1f02-4977-ae1b-69e3fd8da818";
-const tomDmConversationId = process.env.TOM_DISCORD_CONVERSATION_ID || "conv-d679305a-0853-4f35-b774-c823f275ca63";
+const tomDmConversationId = process.env.TOM_DISCORD_CONVERSATION_ID || "conv-11ff7b93-caf0-438a-9252-e4d5018d20af";
 const extraChannelConversationId = process.env.EXTRA_DISCORD_CONVERSATION_ID || "conv-3e8b0a6f-c1b1-41e1-83ef-9ba49268292b";
 
 const now = () => new Date().toISOString();
