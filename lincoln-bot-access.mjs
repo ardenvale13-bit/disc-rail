@@ -1,6 +1,7 @@
 export const lincolnBotChannels = [
   "1421576309582336090", "1421970395669729351", "1421969229430784121",
   "1421967585091653784", "1477335744073961563", "1421972753338339418",
+  "1563958992038793289",
 ];
 
 // Apply after Zibb/Corvi patches; also upgrades previously patched bundles.

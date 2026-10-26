@@ -6,7 +6,7 @@ import { patchCorvinictus } from "./corvinictus.mjs";
 import { patchDiscordKeywords } from "./discord-keywords.mjs";
 import { lincolnBotChannels, patchLincolnBotAccess } from "./lincoln-bot-access.mjs";
 
-test("combined bot guard restricts Lincoln to six channels and explicit triggers", () => {
+test("combined bot guard restricts Lincoln to approved channels and explicit triggers", () => {
   const start = readFileSync(new URL("./start.mjs", import.meta.url), "utf8");
   const fn = start.slice(start.indexOf("function patchDiscordBotAllowlist()"), start.indexOf("function patchDiscordRespectAutoThread()"));
   const guard = new Function("return " + fn.match(/const replacement = (`[^`]+`);/)[1])();
